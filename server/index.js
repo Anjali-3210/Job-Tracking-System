@@ -113,6 +113,34 @@ app.get("/profile", verifyToken, (req, res) => {
   });
 });
 
+app.post("/jobs", verifyToken, async (req, res) => {
+  const { company, position, status } = req.body;
+
+  const job = await prisma.job.create({
+    data: {
+      company,
+      position,
+      status,
+      userId: req.user.id,
+    },
+  });
+
+  res.status(201).json({
+    message: "Job created successfully",
+    job,
+  });
+});
+
+app.get("/jobs", verifyToken, async (req, res) => {
+  const jobs = await prisma.job.findMany({
+    where: {
+      userId: req.user.id,
+    },
+  });
+
+  res.status(200).json(jobs);
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

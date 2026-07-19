@@ -11,4 +11,17 @@ model User {
   name     String
   email    String @unique
   password String
+
+  jobs Job[]
+}
+
+model Job {
+  id          Int      @id @default(autoincrement())
+  company     String
+  position    String
+  status      String
+  appliedDate DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
 }

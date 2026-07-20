@@ -141,6 +141,67 @@ app.get("/jobs", verifyToken, async (req, res) => {
   res.status(200).json(jobs);
 });
 
+app.put("/jobs/:id", verifyToken, async (req, res) => {
+  const { id } = req.params;
+  const { company, position, status } = req.body;
+
+  const job = await prisma.job.findFirst({
+    where: {
+      id: Number(id),
+      userId: req.user.id,
+    },
+  });
+
+  if (!job) {
+    return res.status(404).json({
+      message: "Job not found",
+    });
+  }
+
+  const updatedJob = await prisma.job.update({
+    where: {
+      id: Number(id),
+    },
+    data: {
+      company,
+      position,
+      status,
+    },
+  });
+
+  res.status(200).json({
+    message: "Job updated successfully",
+    job: updatedJob,
+  });
+});
+
+app.delete("/jobs/:id", verifyToken, async (req, res) => {
+  const { id } = req.params;
+
+  const job = await prisma.job.findFirst({
+    where: {
+      id: Number(id),
+      userId: req.user.id,
+    },
+  });
+
+  if (!job) {
+    return res.status(404).json({
+      message: "Job not found",
+    });
+  }
+
+  await prisma.job.delete({
+    where: {
+      id: Number(id),
+    },
+  });
+
+  res.status(200).json({
+    message: "Job deleted successfully",
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

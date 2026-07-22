@@ -114,92 +114,137 @@ app.get("/profile", verifyToken, (req, res) => {
 });
 
 app.post("/jobs", verifyToken, async (req, res) => {
-  const { company, position, status } = req.body;
+  try {
+      const { company, position, status } = req.body;
 
-  const job = await prisma.job.create({
-    data: {
-      company,
-      position,
-      status,
-      userId: req.user.id,
-    },
-  });
+      if (!company || !position || !status) {
+      return res.status(400).json({
+      message: "Company, position and status are required",
+      });
+    }
+
+    const job = await prisma.job.create({
+      data: {
+        company,
+        position,
+        status,
+        userId: req.user.id,
+      },
+    },);
 
   res.status(201).json({
     message: "Job created successfully",
     job,
   });
+    
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
 });
 
 app.get("/jobs", verifyToken, async (req, res) => {
-  const jobs = await prisma.job.findMany({
-    where: {
-      userId: req.user.id,
-    },
-  });
+  try {
+    const { company, status } = req.query;
 
-  res.status(200).json(jobs);
+    const jobs = await prisma.job.findMany({
+      where: {
+        userId: req.user.id,
+
+        ...(company && {
+          company: {
+            contains: company,
+            mode: "insensitive",
+          },
+        }),
+
+        ...(status && {
+          status,
+        }),
+      },
+    });
+
+    res.status(200).json(jobs);
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
 });
 
 app.put("/jobs/:id", verifyToken, async (req, res) => {
-  const { id } = req.params;
-  const { company, position, status } = req.body;
+  try {
+    const { id } = req.params;
+    const { company, position, status } = req.body;
 
-  const job = await prisma.job.findFirst({
-    where: {
-      id: Number(id),
-      userId: req.user.id,
-    },
-  });
+    const job = await prisma.job.findFirst({
+      where: {
+        id: Number(id),
+        userId: req.user.id,
+      },
+    });
 
-  if (!job) {
-    return res.status(404).json({
-      message: "Job not found",
+    if (!job) {
+      return res.status(404).json({
+        message: "Job not found",
+      });
+    }
+
+    const updatedJob = await prisma.job.update({
+      where: {
+        id: Number(id),
+      },
+      data: {
+        company,
+        position,
+        status,
+      },
+    });
+
+    res.status(200).json({
+      message: "Job updated successfully",
+      job: updatedJob,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
     });
   }
-
-  const updatedJob = await prisma.job.update({
-    where: {
-      id: Number(id),
-    },
-    data: {
-      company,
-      position,
-      status,
-    },
-  });
-
-  res.status(200).json({
-    message: "Job updated successfully",
-    job: updatedJob,
-  });
 });
 
 app.delete("/jobs/:id", verifyToken, async (req, res) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  const job = await prisma.job.findFirst({
-    where: {
-      id: Number(id),
-      userId: req.user.id,
-    },
-  });
+    const job = await prisma.job.findFirst({
+      where: {
+        id: Number(id),
+        userId: req.user.id,
+      },
+    });
 
-  if (!job) {
-    return res.status(404).json({
-      message: "Job not found",
+    if (!job) {
+      return res.status(404).json({
+        message: "Job not found",
+      });
+    }
+
+    await prisma.job.delete({
+      where: {
+        id: Number(id),
+      },
+    });
+
+    res.status(200).json({
+      message: "Job deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
     });
   }
-
-  await prisma.job.delete({
-    where: {
-      id: Number(id),
-    },
-  });
-
-  res.status(200).json({
-    message: "Job deleted successfully",
-  });
 });
 
 app.listen(PORT, () => {

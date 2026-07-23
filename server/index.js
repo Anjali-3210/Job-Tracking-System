@@ -4,10 +4,12 @@ import { PrismaClient } from "./generated/prisma/client.ts";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import cors from "cors";
 
 const PORT = process.env.PORT || 5000;
 
 const app = express();
+app.use(cors());
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,

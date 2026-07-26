@@ -24,11 +24,13 @@ app.get("/", (req, res) => {
 });
 
 function verifyToken(req, res, next) {
-  const token = req.headers.authorization;
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
+  if (!authHeader) {
     return res.status(401).send("Access Denied. No Token Provided.");
   }
+
+  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

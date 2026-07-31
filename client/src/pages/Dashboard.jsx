@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import "./Dashboard.css";
+import { toast } from "react-toastify";
 
 import {
   FaBriefcase,
@@ -9,6 +10,14 @@ import {
   FaEdit,
   FaTrash,
   FaSearch,
+} from "react-icons/fa";
+
+import {
+  FaClipboardList,
+  FaPaperPlane,
+  FaUserTie,
+  FaCheckCircle,
+  FaTimesCircle,
 } from "react-icons/fa";
 
 const Dashboard = () => {
@@ -20,6 +29,10 @@ const Dashboard = () => {
     const [editingJobId, setEditingJobId] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
+    const [notes, setNotes] = useState("");
+    const [interviewDate, setInterviewDate] = useState("");
+    const [statusFilter, setStatusFilter] = useState("All");
+    const [sortBy, setSortBy] = useState("newest");
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -52,18 +65,22 @@ const handleAddJob = async () => {
             company,
             position,
             status,
+            notes,
+            interviewDate,
         });
 
         setEditingJobId(null);
-        alert("Job updated successfully!");
+        toast.success("Job updated successfully!");
     } else {
         await api.post("/jobs", {
             company,
             position,
             status,
+            notes,
+            interviewDate,
         });
 
-        alert("Job added successfully!");
+        toast.success("Job added successfully!");
     }
 
     const response = await api.get("/jobs");
@@ -72,9 +89,11 @@ const handleAddJob = async () => {
     setCompany("");
     setPosition("");
     setStatus("Applied");
+    setNotes("");
+    setInterviewDate("");
   } catch (error) {
     console.log(error);
-    alert("Failed to add job");
+    toast.error("Failed to add job");
   }
 };
 
@@ -94,18 +113,27 @@ const handleDeleteJob = async (id) => {
         const response = await api.get("/jobs");
         setJobs(response.data);
 
-        alert("Job deleted successfully!");
+        toast.success("Job deleted successfully!");
     } catch (error) {
         console.log(error);
-        alert("Failed to delete job");
+        toast.error("Failed to delete job");
     }
 };
 
 const handleEditJob = (job) => {
-    setEditingJobId(job.id);
-    setCompany(job.company);
-    setPosition(job.position);
-    setStatus(job.status);
+  setCompany(job.company);
+  setPosition(job.position);
+  setStatus(job.status);
+
+  setNotes(job.notes || "");
+
+  setInterviewDate(
+    job.interviewDate
+      ? new Date(job.interviewDate).toISOString().slice(0, 16)
+      : ""
+  );
+
+  setEditingJobId(job.id);
 };
 
 const totalJobs = jobs.length;
@@ -126,10 +154,33 @@ const rejectedJobs = jobs.filter(
     (job) => job.status === "Rejected"
 ).length;
 
-const filteredJobs = jobs.filter((job) =>
-  job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  job.position.toLowerCase().includes(searchTerm.toLowerCase())
-);
+const filteredJobs = jobs
+  .filter((job) => {
+    const matchesSearch =
+      job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.position.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "All" || job.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  })
+  .sort((a, b) => {
+    if (sortBy === "newest") {
+      return new Date(b.applicationDate) - new Date(a.applicationDate);
+    }
+
+    if (sortBy === "oldest") {
+      return new Date(a.applicationDate) - new Date(b.applicationDate);
+    }
+
+    if (sortBy === "company") {
+      return a.company.localeCompare(b.company);
+    }
+
+    return 0;
+  });
+
 
 if (loading) {
     return (
@@ -144,48 +195,85 @@ if (loading) {
     <div className="dashboard-container">
       <div className="dashboard-header">
 
-      <div className="header-title">
-          <h1>📋 Job Tracker</h1>
-          <p>Welcome back, {user.name} 👋</p>
-      </div>
+        <div className="welcome-section">
 
-      <button
-          className="logout-btn"
-          onClick={handleLogout}
-      >
-          Logout
-      </button>
+            <h2>
+                Welcome back, {user?.name || "User"} 👋
+            </h2>
 
-      </div>
+            <p>
+                Keep track of your applications and land your dream job.
+            </p>
+
+        </div>
+
+        <button
+            className="logout-btn"
+            onClick={handleLogout}
+        >
+            Logout
+        </button>
+
+    </div>
 
       <div className="stats-container">
 
-      <div className="stat-card">
-          <h3>Total Jobs</h3>
-          <p>{totalJobs}</p>
-      </div>
+    <div className="stat-card">
+        <div className="stat-icon">
+            <FaClipboardList />
+        </div>
 
-      <div className="stat-card applied-card">
-          <h3>Applied</h3>
-          <p>{appliedJobs}</p>
-      </div>
+        <div>
+            <h3>Total Jobs</h3>
+            <p>{totalJobs}</p>
+        </div>
+    </div>
 
-      <div className="stat-card interview-card">
-          <h3>Interview</h3>
-          <p>{interviewJobs}</p>
-      </div>
+    <div className="stat-card applied-card">
+        <div className="stat-icon">
+            <FaPaperPlane />
+        </div>
 
-      <div className="stat-card offer-card">
-          <h3>Offer</h3>
-          <p>{offerJobs}</p>
-      </div>
+        <div>
+            <h3>Applied</h3>
+            <p>{appliedJobs}</p>
+        </div>
+    </div>
 
-      <div className="stat-card rejected-card">
-          <h3>Rejected</h3>
-          <p>{rejectedJobs}</p>
-      </div>
+    <div className="stat-card interview-card">
+        <div className="stat-icon">
+            <FaUserTie />
+        </div>
 
-      </div>
+        <div>
+            <h3>Interview</h3>
+            <p>{interviewJobs}</p>
+        </div>
+    </div>
+
+    <div className="stat-card offer-card">
+        <div className="stat-icon">
+            <FaCheckCircle />
+        </div>
+
+        <div>
+            <h3>Offer</h3>
+            <p>{offerJobs}</p>
+        </div>
+    </div>
+
+    <div className="stat-card rejected-card">
+        <div className="stat-icon">
+            <FaTimesCircle />
+        </div>
+
+        <div>
+            <h3>Rejected</h3>
+            <p>{rejectedJobs}</p>
+        </div>
+    </div>
+
+    </div>
 
       <div className="add-job-card">
 
@@ -227,22 +315,69 @@ if (loading) {
             </select>
         </div>
 
+        <div className="form-group">
+        <label>Interview Date</label>
+        <input
+            type="datetime-local"
+            className="form-input"
+            value={interviewDate}
+            onChange={(e) => setInterviewDate(e.target.value)}
+        />
+        </div>
+
+        <div className="form-group">
+            <label>Notes</label>
+            <textarea
+                className="form-input"
+                placeholder="Add interview notes or reminders..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={4}
+            />
+        </div>
+
         <button className="add-btn" onClick={handleAddJob}>
             {editingJobId ? "Update Job" : "Add Job"}
         </button>
 
       </div>
 
-      <div className="search-container">
-      <FaSearch className="search-icon" />
+      <div className="filter-bar">
 
-      <input
-        type="text"
-        placeholder="Search by company or position..."
-        className="form-input search-input"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
+        <div className="search-box">
+            <input
+                type="text"
+                placeholder="Search company or position..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+        </div>
+
+        <div className="filter-select">
+            <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+            >
+                <option value="All">All Status</option>
+                <option value="Applied">Applied</option>
+                <option value="Interview">Interview</option>
+                <option value="Offer">Offer</option>
+                <option value="Rejected">Rejected</option>
+            </select>
+        </div>
+
+        <div className="filter-select">
+            <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+            >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="company">Company A-Z</option>
+                <option value="status">Status</option>
+            </select>
+        </div>
+
       </div>
 
       <h2 className="jobs-heading">Your Jobs</h2>
@@ -258,9 +393,30 @@ if (loading) {
         <FaBriefcase /> <strong>Position:</strong> {job.position}
       </p>
 
-      <span className={`job-status status-${job.status.toLowerCase()}`}>
-        {job.status}
-      </span>
+      <div className="job-header">
+        <span className={`job-status status-${job.status.toLowerCase()}`}>
+            {job.status}
+        </span>
+        </div>
+
+      <p className="job-date">
+        📅 <strong>Applied:</strong>{" "}
+        {new Date(job.applicationDate).toLocaleDateString()}
+      </p>
+
+    {job.interviewDate && (
+        <p className="job-date">
+            ⏰ <strong>Interview:</strong>{" "}
+            {new Date(job.interviewDate).toLocaleString()}
+        </p>
+    )}
+
+    {job.notes && (
+        <div className="job-notes">
+            <strong>📝 Notes:</strong>
+            <p>{job.notes}</p>
+        </div>
+    )}
 
       <div className="job-actions">
         <button

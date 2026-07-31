@@ -20,8 +20,11 @@ model Job {
   company     String
   position    String
   status      String
-  appliedDate DateTime @default(now())
 
   userId Int
   user   User @relation(fields: [userId], references: [id])
+  notes           String?
+  applicationDate DateTime @default(now())
+  interviewDate   DateTime?
 }
+

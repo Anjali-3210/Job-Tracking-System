@@ -119,7 +119,7 @@ app.get("/profile", verifyToken, (req, res) => {
 
 app.post("/jobs", verifyToken, async (req, res) => {
   try {
-      const { company, position, status } = req.body;
+      const { company, position, status, notes, interviewDate } = req.body;
 
       if (!company || !position || !status) {
       return res.status(400).json({
@@ -132,6 +132,9 @@ app.post("/jobs", verifyToken, async (req, res) => {
         company,
         position,
         status,
+        notes,
+        applicationDate: new Date(),
+        interviewDate: interviewDate ? new Date(interviewDate) : null,
         userId: req.user.id,
       },
     },);
@@ -143,8 +146,8 @@ app.post("/jobs", verifyToken, async (req, res) => {
     
 
   } catch (error) {
-    res.status(500).json({
-      message: "Internal Server Error",
+      res.status(500).json({
+    message: "Internal Server Error",
     });
   }
 });
@@ -181,7 +184,7 @@ app.get("/jobs", verifyToken, async (req, res) => {
 app.put("/jobs/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { company, position, status } = req.body;
+    const { company, position, status, notes, interviewDate  } = req.body;
 
     const job = await prisma.job.findFirst({
       where: {
@@ -204,6 +207,8 @@ app.put("/jobs/:id", verifyToken, async (req, res) => {
         company,
         position,
         status,
+        notes,
+        interviewDate: interviewDate ? new Date(interviewDate) : null,
       },
     });
 

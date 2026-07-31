@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Job" ADD COLUMN     "applicationDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "interviewDate" TIMESTAMP(3),
+ADD COLUMN     "notes" TEXT;
